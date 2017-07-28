@@ -20,18 +20,19 @@ public class GeoLocServiceImpl implements GeoLocService {
             Metadata metadata = ImageMetadataReader.readMetadata(file);
             GpsDirectory directory = metadata.getFirstDirectoryOfType(GpsDirectory.class);
             if (directory == null) {
-                logger.info("No geolocation information");
+                logger.error("No geolocation information");
                 throw new BadGeolocationException();
             }
             GpsDescriptor descriptor = new GpsDescriptor(directory);
             if (descriptor.getGpsLongitudeDescription() == null
                     || descriptor.getGpsLatitudeDescription() == null
                     || isLocationUnacceptable(descriptor.getGpsLongitudeDescription(), descriptor.getGpsLatitudeDescription())) {
-                logger.info("Incorrect geolocation information");
+                logger.error("Incorrect geolocation information");
                 throw new BadGeolocationException();
             }
         } catch (Exception e) {
-            logger.info("An error occured : " + e.getMessage());
+            logger.error("An error occured : " + e.getMessage());
+            throw new BadGeolocationException();
         }
     }
 
