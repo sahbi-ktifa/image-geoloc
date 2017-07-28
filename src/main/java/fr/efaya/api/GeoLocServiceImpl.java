@@ -1,6 +1,7 @@
 package fr.efaya.api;
 
 import com.drew.imaging.ImageMetadataReader;
+import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.exif.GpsDescriptor;
 import com.drew.metadata.exif.GpsDirectory;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.io.IOException;
 
 @Service
 public class GeoLocServiceImpl implements GeoLocService {
@@ -30,7 +32,7 @@ public class GeoLocServiceImpl implements GeoLocService {
                 logger.error("Incorrect geolocation information");
                 throw new BadGeolocationException();
             }
-        } catch (Exception e) {
+        } catch (IOException | ImageProcessingException e) {
             logger.error("An error occured : " + e.getMessage());
             throw new BadGeolocationException();
         }
