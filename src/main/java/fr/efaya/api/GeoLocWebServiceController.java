@@ -19,13 +19,18 @@ import java.io.IOException;
  */
 @RestController
 @CrossOrigin
+@RequestMapping("api/geo")
 public class GeoLocWebServiceController {
 
     @Autowired
     private GeoLocService geoLocService;
 
-    @RequestMapping(value = "api/geo", method = RequestMethod.POST)
-    public void savePictureBinary(@RequestParam MultipartFile file) throws BadGeolocationException {
+    @RequestMapping(value = "within", method = RequestMethod.POST)
+    public void withinBounds(@RequestParam MultipartFile file,
+                             @RequestParam Double latitudeA,
+                             @RequestParam Double longitudeA,
+                             @RequestParam Double latitudeB,
+                             @RequestParam Double longitudeB) throws BadGeolocationException {
         if (file == null) {
             throw new BadGeolocationException();
         }
@@ -36,7 +41,8 @@ public class GeoLocWebServiceController {
             if (mimeType == null || !mimeType.split("/")[0].equals("image")) {
                 throw new BadGeolocationException();
             }
-            geoLocService.verify(binary);
+            Point coordinates = geoLocService.extractGPSInformation(binary);
+            geoLocService.withinBounds(coordinates, new Point(latitudeA, longitudeA), new Point(latitudeB, longitudeB));
         } catch (IOException e) {
             e.printStackTrace();
         } finally {

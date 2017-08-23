@@ -8,7 +8,6 @@ import com.drew.metadata.exif.GpsDirectory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,13 +19,8 @@ import java.util.stream.Stream;
 public class GeoLocServiceImpl implements GeoLocService {
     private Logger logger = LoggerFactory.getLogger(GeoLocServiceImpl.class);
 
-    private static double[] BOUNDARY_GEO_LAT_MAX = {48.0, 52.0, 0.0};
-    private static double[] BOUNDARY_GEO_LAT_MIN = {48.0, 50.0, 0.0};
-    private static double[] BOUNDARY_GEO_LON_MAX = {1.0, 49.0, 0.0};
-    private static double[] BOUNDARY_GEO_LON_MIN = {1.0, 45.0, 0.0};
-
     @Override
-    public void verify(File file) throws BadGeolocationException {
+    public Point extractGPSInformation(File file) {
         try {
             Metadata metadata = ImageMetadataReader.readMetadata(file);
             GpsDirectory directory = metadata.getFirstDirectoryOfType(GpsDirectory.class);
@@ -36,46 +30,39 @@ public class GeoLocServiceImpl implements GeoLocService {
             }
             GpsDescriptor descriptor = new GpsDescriptor(directory);
             if (descriptor.getGpsLongitudeDescription() == null
-                    || descriptor.getGpsLatitudeDescription() == null
-                    || isLocationUnacceptable(descriptor.getGpsLongitudeDescription(), descriptor.getGpsLatitudeDescription())) {
+                    || descriptor.getGpsLatitudeDescription() == null) {
                 logger.error("Incorrect geolocation information");
                 throw new BadGeolocationException();
             }
+            return new Point(resolveCoordinateAsDecimal(descriptor.getGpsLatitudeDescription()),
+                    resolveCoordinateAsDecimal(descriptor.getGpsLongitudeDescription()));
         } catch (IOException | ImageProcessingException e) {
             logger.error("An error occured : " + e.getMessage());
             throw new BadGeolocationException();
         }
     }
 
-    private boolean isLocationUnacceptable(String longitude, String latitude) {
-        List<Double> lat = resolveCoordinate(latitude);
-        if (checkCoordinateOut(lat, BOUNDARY_GEO_LAT_MIN, BOUNDARY_GEO_LAT_MAX)) {
-            return true;
+    @Override
+    public void withinBounds(Point target, Point pointA, Point pointB) throws BadGeolocationException {
+        if (checkCoordinateOut(target.getLatitude(), pointA.getLatitude(), pointB.getLatitude()) ||
+                checkCoordinateOut(target.getLongitude(), pointA.getLongitude(), pointB.getLongitude())) {
+            logger.error("Incorrect geolocation information");
+            throw new BadGeolocationException();
         }
-        List<Double> lon = resolveCoordinate(longitude);
-        if (checkCoordinateOut(lon, BOUNDARY_GEO_LON_MIN, BOUNDARY_GEO_LON_MAX)) {
-            return true;
-        }
-        return false;
     }
 
-    private boolean checkCoordinateOut(List<Double> coordinate, double[] refMin, double[] refMax) {
-        if (CollectionUtils.isEmpty(coordinate) || coordinate.size() < 3) {
-            return true;
+    private boolean checkCoordinateOut(Double ref, Double ref1, Double ref2) {
+        if ((ref >= ref1 && ref <= ref2) || (ref >= ref2 && ref <= ref1)) {
+            return false;
         }
-        if (coordinate.get(0) < refMin[0] || coordinate.get(0) > refMax[0]) {
-            return true;
-        }
-        if (coordinate.get(1) < refMin[1] || coordinate.get(1) > refMax[1]) {
-            return true;
-        }
-        return false;
+        return true;
     }
 
-    private List<Double> resolveCoordinate(String coordinate) {
+    private Double resolveCoordinateAsDecimal(String coordinate) {
         String[] split = coordinate.split(" ");
-        return Stream.of(split)
+        List<Double> cleanCoordinates = Stream.of(split)
                 .map(d -> Double.valueOf(d.replaceAll("[^\\d.]", "")))
                 .collect(Collectors.toList());
+        return cleanCoordinates.get(0) + (((cleanCoordinates.get(1) * 60) + cleanCoordinates.get(2)) / (60*60));
     }
 }
