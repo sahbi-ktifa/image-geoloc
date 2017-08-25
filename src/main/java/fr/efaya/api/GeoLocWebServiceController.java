@@ -22,8 +22,11 @@ import java.io.IOException;
 @RequestMapping("api/geo")
 public class GeoLocWebServiceController {
 
-    @Autowired
     private GeoLocService geoLocService;
+
+    public GeoLocWebServiceController(GeoLocService geoLocService) {
+        this.geoLocService = geoLocService;
+    }
 
     @RequestMapping(value = "within", method = RequestMethod.POST)
     public void withinBounds(@RequestParam MultipartFile file,
