@@ -1,7 +1,6 @@
 package fr.efaya.api;
 
 import org.apache.commons.io.FileUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -26,6 +25,29 @@ public class GeoLocWebServiceController {
 
     public GeoLocWebServiceController(GeoLocService geoLocService) {
         this.geoLocService = geoLocService;
+    }
+
+    @RequestMapping(value = "extract", method = RequestMethod.POST)
+    public Point extract(@RequestParam MultipartFile file) throws BadGeolocationException {
+        if (file == null) {
+            throw new BadGeolocationException();
+        }
+        File binary = null;
+        try {
+            binary = convert(file);
+            String mimeType = new MimetypesFileTypeMap().getContentType(binary);
+            if (mimeType == null || !mimeType.split("/")[0].equals("image")) {
+                throw new BadGeolocationException();
+            }
+            return geoLocService.extractGPSInformation(binary);
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (binary != null) {
+                FileUtils.deleteQuietly(binary);
+            }
+        }
+        return null;
     }
 
     @RequestMapping(value = "within", method = RequestMethod.POST)

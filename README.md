@@ -6,6 +6,10 @@ This project uses Drew Noakes [metadata-extractor](https://github.com/drewnoakes
 ## How to use API
 This API is available at https://image-geoloc.herokuapp.com/
 
+### Extract picture coordinates
+Do a `POST` request at `/api/geo/extract` with following parameters:
+- `file` -> Form-data parameter
+
 ### Picture within specific bounds
 Do a `POST` request at `/api/geo/within` with following parameters:
 - `file` -> Form-data parameter
@@ -15,6 +19,3 @@ Do a `POST` request at `/api/geo/within` with following parameters:
 - `longitudeB` -> Request parameter as double for point B
 
 A and B will be used to determine area boundaries.
-
-Example call:
-https://image-geoloc.herokuapp.com/api/geo/within?latitudeA=48.87&longitudeA=1.76&latitudeB=48.85&longitudeB=1.81
